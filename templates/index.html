@@ -363,6 +363,17 @@ input:checked+.slider:before{transform:translateX(22px);background:var(--g1);}
 .kpi-unit{font-size:.72rem;color:var(--muted);margin-top:2px;}
 .kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:6px;letter-spacing:.5px;}
 
+/* CHANGED 1 — new sub-label and contextual note styles */
+.kpi-sub{
+  font-size:.67rem;color:rgba(126,184,154,.45);
+  margin-top:3px;line-height:1.3;
+}
+.kpi-note{
+  font-size:.67rem;color:#ffab00;margin-top:6px;
+  line-height:1.3;display:flex;align-items:flex-start;gap:4px;
+}
+.kpi-note i{font-size:.6rem;margin-top:2px;flex-shrink:0;}
+
 /* Charts Row */
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;}
 .chart-card{
@@ -713,7 +724,7 @@ input.input-ok{
     </div>
   </div>
 
-  <!-- AI Diagnosis: Stage 2 cause + Stage 1 confidence (auto-hidden for SUCCESS) -->
+  <!-- AI Diagnosis -->
   <div id="ai-diagnosis" class="ai-diagnosis">
     <div class="ai-diag-icon"><i class="fa-solid fa-brain"></i></div>
     <div class="ai-diag-body">
@@ -740,18 +751,25 @@ input.input-ok{
 
   <!-- KPIs -->
   <div class="kpi-grid" id="kpi-grid">
+
+    <!-- CHANGED 2 — BIOGAS YIELD → SPECIFIC YIELD with subtitle -->
     <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
       <div class="kpi-value" id="kpi-yield">—</div>
-      <div class="kpi-unit">L / kg VS</div>
-      <div class="kpi-lbl">BIOGAS YIELD</div>
+      <div class="kpi-unit">L / kg VS added</div>
+      <div class="kpi-lbl">SPECIFIC YIELD</div>
+      <div class="kpi-sub">Efficiency metric — normalised per kg VS</div>
     </div>
+
+    <!-- CHANGED 3 — TOTAL BIOGAS with subtitle -->
     <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-drum-steelpan"></i></div>
       <div class="kpi-value" id="kpi-total">—</div>
       <div class="kpi-unit">Litres total</div>
       <div class="kpi-lbl">TOTAL BIOGAS</div>
+      <div class="kpi-sub">Volume metric — actual production</div>
     </div>
+
     <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-atom"></i></div>
       <div class="kpi-value" id="kpi-ch4">—</div>
@@ -897,10 +915,9 @@ async function loadFeedstocks(){
   try{
     const res=await fetch('/api/feedstocks');
     FEEDSTOCKS=await res.json();
-    addFeedstockRow(); // add first row automatically
+    addFeedstockRow();
   }catch(e){
     console.error('Failed to load feedstocks',e);
-    // Fallback empty select
     addFeedstockRow();
   }
 }
@@ -908,7 +925,6 @@ async function loadFeedstocks(){
 function buildSelect(){
   const sel=document.createElement('select');
   sel.className='feedstock-select';
-  // Group by category
   const cats={};
   FEEDSTOCKS.forEach(f=>{
     if(!cats[f.category])cats[f.category]=[];
@@ -942,7 +958,6 @@ function addFeedstockRow(){
   badge.className='row-badge';
   badge.textContent='Feed #'+rowCount;
 
-  // Actually make the badge part of a wrapper to keep grid clean
   const wrapper=document.createElement('div');
   wrapper.style.cssText='display:flex;flex-direction:column;gap:6px;';
   wrapper.appendChild(badge);
@@ -953,7 +968,6 @@ function addFeedstockRow(){
   massInput.setAttribute('inputmode','decimal');
   massInput.placeholder='kg'; massInput.style.textAlign='right';
   massInput.title='Enter feedstock mass: 0.1 – 50,000 kg';
-  // Real-time validation for mass
   massInput.addEventListener('input',()=>validateMassInput(massInput));
 
   const removeBtn=document.createElement('button');
@@ -972,8 +986,7 @@ function addFeedstockRow(){
 
 document.getElementById('btn-add-row').addEventListener('click',addFeedstockRow);
 
-// ─── Predict ──────────────────────────────────────────────────
-// ── Validation helpers ────────────────────────────────────────
+// ─── Validation helpers ───────────────────────────────────────
 const FIELD_RULES = {
   p_volume:   {min:1,     max:500,  label:'Digester Volume',       unit:'m³'},
   p_hrt:      {min:5,     max:90,   label:'HRT',                   unit:'days'},
@@ -985,7 +998,6 @@ const FIELD_RULES = {
 };
 
 function safeParseFloat(raw){
-  // Strip any non-numeric characters except leading minus and dot
   const cleaned = String(raw).replace(/[^0-9.\-]/g,'');
   const v = parseFloat(cleaned);
   return isNaN(v) ? NaN : v;
@@ -995,16 +1007,13 @@ function validateField(id){
   const rule  = FIELD_RULES[id];
   const input = document.getElementById(id);
   const raw   = input.value.trim();
-  const msgs  = [];
 
-  // Empty check (skip if optional and empty)
   if(raw === ''){
     if(rule.optional){ input.classList.remove('input-error','input-ok'); return null; }
     input.classList.add('input-error'); input.classList.remove('input-ok');
     return rule.label + ' is required.';
   }
 
-  // Non-numeric / special character check
   if(!/^-?[0-9]*\.?[0-9]+(e[+-]?[0-9]+)?$/i.test(raw)){
     input.classList.add('input-error'); input.classList.remove('input-ok');
     return rule.label + ': only numbers are accepted (got "' + raw.substring(0,20) + '").';
@@ -1012,13 +1021,11 @@ function validateField(id){
 
   const v = parseFloat(raw);
 
-  // NaN / Infinite check (catches scientific extremes like 1e999)
   if(!isFinite(v) || isNaN(v)){
     input.classList.add('input-error'); input.classList.remove('input-ok');
     return rule.label + ': value must be a finite number.';
   }
 
-  // Range checks
   if(v < rule.min){
     input.classList.add('input-error'); input.classList.remove('input-ok');
     return rule.label + ': ' + v + ' is too low — minimum is ' + rule.min + ' ' + rule.unit + '.';
@@ -1029,7 +1036,7 @@ function validateField(id){
   }
 
   input.classList.remove('input-error'); input.classList.add('input-ok');
-  return null; // valid
+  return null;
 }
 
 function validateMassInput(massInput){
@@ -1055,7 +1062,6 @@ function showErrors(msgs){
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-// Attach real-time listeners to all static operating parameter inputs
 Object.keys(FIELD_RULES).forEach(id=>{
   const el = document.getElementById(id);
   if(el){
@@ -1064,11 +1070,10 @@ Object.keys(FIELD_RULES).forEach(id=>{
   }
 });
 
-// ── Predict button ─────────────────────────────────────────────
+// ─── Predict button ───────────────────────────────────────────
 document.getElementById('btn-predict').addEventListener('click',async function(){
   const errors = [];
 
-  // ── Feedstock rows validation ────────────────────────────────
   const rows = document.querySelectorAll('.feedstock-row');
   const feedstocks = [];
   if(rows.length === 0){ errors.push('Add at least one feedstock before predicting.'); }
@@ -1091,21 +1096,18 @@ document.getElementById('btn-predict').addEventListener('click',async function()
     feedstocks.push({name:sel.value, mass_kg:mv});
   });
 
-  // Check duplicate feedstocks
   const names = feedstocks.map(f=>f.name);
   const dupes = names.filter((n,i)=>names.indexOf(n)!==i);
   if(dupes.length>0) errors.push('Duplicate feedstock(s): '+[...new Set(dupes)].join(', ')+'. Each feedstock can only be added once.');
 
-  // ── Operating parameters validation ─────────────────────────
   Object.keys(FIELD_RULES).forEach(id=>{
     const msg = validateField(id);
     if(msg) errors.push(msg);
   });
 
   if(errors.length > 0){ showErrors(errors); return; }
-  showErrors([]); // clear any prior errors
+  showErrors([]);
 
-  // ── Build sanitised payload ──────────────────────────────────
   const payload={
     feedstocks,
     digester_volume_m3:     parseFloat(document.getElementById('p_volume').value),
@@ -1115,11 +1117,10 @@ document.getElementById('btn-predict').addEventListener('click',async function()
     operating_pressure_kPa: parseFloat(document.getElementById('p_pressure').value),
     ISR:                    parseFloat(document.getElementById('p_isr').value),
     urea_added_kg:          parseFloat(document.getElementById('p_urea').value)||0,
-              water_added_kg:     parseFloat(document.getElementById('p_water')?.value)||0,
+    water_added_kg:         parseFloat(document.getElementById('p_water')?.value)||0,
     is_continuous:          document.getElementById('p_continuous').checked,
   };
 
-  // Show loading
   document.getElementById('loading-overlay').classList.add('show');
   document.getElementById('btn-predict').disabled=true;
   document.getElementById('step2-pill').classList.add('active');
@@ -1160,12 +1161,11 @@ function renderResults(d){
   document.getElementById('status-label').textContent=d.run_status.replace('_',' ');
   document.getElementById('status-desc').textContent=descs[d.run_status];
 
-  // Stage 2 — Primary failure cause
+  // AI Diagnosis
   const diagEl = document.getElementById('ai-diagnosis');
   document.getElementById('diag-cause').textContent = d.primary_failure_cause || '—';
   diagEl.className = 'ai-diagnosis show ' + d.run_status;
 
-  // Stage 1 — Status probabilities (confidence bars)
   ['SUCCESS','PARTIAL_FAIL','FAIL'].forEach(cls => {
     const pct = ((d.status_probabilities && d.status_probabilities[cls]) || 0) * 100;
     const fill = document.getElementById('prob-fill-' + cls);
@@ -1178,13 +1178,46 @@ function renderResults(d){
   document.getElementById('eff-num').style.color=
     d.run_status==='SUCCESS'?'var(--g1)':d.run_status==='PARTIAL_FAIL'?'#ffab00':'var(--red)';
 
-  // KPIs with counter animation
+  // KPI counters
   animCount('kpi-yield',  d.biogas_yield_L_per_kgVS, 1);
   animCount('kpi-total',  d.total_biogas_L,           0);
   animCount('kpi-ch4',    d.CH4_pct,                  1);
   animCount('kpi-co2',    d.CO2_pct,                  1);
   animCount('kpi-cn',     d.blended_CN_ratio,         1);
   animCount('kpi-olr',    d.OLR_kg_VS_m3_day,         2);
+
+  // CHANGED 4 — Real-world contextual notes on KPI cards
+  const yieldCard = document.getElementById('kpi-yield').closest('.kpi-card');
+  const totalCard = document.getElementById('kpi-total').closest('.kpi-card');
+
+  // Clear any notes from a previous prediction run
+  [yieldCard, totalCard].forEach(c => {
+    c.querySelectorAll('.kpi-note').forEach(n => n.remove());
+  });
+
+  // Always show the formula linking both metrics on the TOTAL card
+  totalCard.insertAdjacentHTML('beforeend',
+    `<div class="kpi-note" style="color:rgba(126,184,154,.55);">
+      <i class="fa-solid fa-link"></i>
+      = Specific Yield &times; ${d.total_VS_kg.toFixed(2)}&nbsp;kg&nbsp;VS
+     </div>`
+  );
+
+  // Show clarifying notes ONLY when VS < 1 kg (the visually confusing case)
+  if(d.total_VS_kg < 1.0){
+    yieldCard.insertAdjacentHTML('beforeend',
+      `<div class="kpi-note">
+        <i class="fa-solid fa-circle-info"></i>
+        Rate metric — larger than total when VS &lt; 1&nbsp;kg (normal)
+       </div>`
+    );
+    totalCard.insertAdjacentHTML('beforeend',
+      `<div class="kpi-note">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Only ${d.total_VS_kg.toFixed(2)}&nbsp;kg VS fed — add more feedstock for practical output
+       </div>`
+    );
+  }
 
   // Gas composition doughnut
   if(gasChart)gasChart.destroy();
