@@ -1,0 +1,28 @@
+# Dataset — too large for GitHub (300-500 MB)
+*.csv
+biogas_training_dataset*.csv
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# CatBoost training logs — not needed on server
+catboost_info/
+
+# Training scripts — not needed on Render
+generate_dataset.py
+model_selection.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

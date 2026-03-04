@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BioSmart — Biogas Yield Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+/* ─── Reset & Root ─── */
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#060d12;
+  --bg2:#0b1821;
+  --card:rgba(0,255,136,0.04);
+  --border:rgba(0,255,136,0.18);
+  --g1:#00e676;
+  --g2:#00b248;
+  --g3:#1de9b6;
+  --red:#ff1744;
+  --amber:#ffab00;
+  --text:#e0f7ef;
+  --muted:#7eb89a;
+  --font-head:'Orbitron',monospace;
+  --font-body:'Inter',sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden;}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:#0b1821;}
+::-webkit-scrollbar-thumb{background:var(--g2);border-radius:3px;}
+
+/* ─── Animated Particle Canvas ─── */
+#particles-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+
+/* ─── NAVBAR ─── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:999;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 40px;
+  background:rgba(6,13,18,0.88);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:var(--font-head);font-size:1.35rem;font-weight:900;
+  background:linear-gradient(90deg,var(--g1),var(--g3));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:2px;
+}
+.nav-logo span{color:var(--g3);-webkit-text-fill-color:var(--g3);}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{
+  color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:500;
+  transition:color .3s;letter-spacing:.5px;
+}
+.nav-links a:hover{color:var(--g1);}
+.nav-badge{
+  background:linear-gradient(135deg,var(--g2),var(--g3));
+  color:#000;font-size:.7rem;font-weight:700;padding:5px 14px;border-radius:20px;
+  font-family:var(--font-head);letter-spacing:1px;
+}
+
+/* ─── HERO ─── */
+#hero{
+  position:relative;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;z-index:1;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,230,118,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(29,233,182,.07) 0%, transparent 60%),
+    var(--bg);
+  padding:100px 20px 60px;
+}
+.hero-eyebrow{
+  display:inline-block;background:rgba(0,230,118,.1);border:1px solid var(--border);
+  color:var(--g3);font-size:.75rem;font-weight:600;letter-spacing:3px;
+  padding:6px 20px;border-radius:20px;margin-bottom:28px;
+  animation:fadeDown .8s ease both;
+}
+.hero-title{
+  font-family:var(--font-head);font-size:clamp(2.4rem,6vw,5rem);
+  font-weight:900;line-height:1.1;
+  background:linear-gradient(135deg,#fff 30%,var(--g1) 60%,var(--g3) 90%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:fadeDown .9s .1s ease both;
+  margin-bottom:18px;
+}
+.hero-sub{
+  color:var(--muted);font-size:1.05rem;max-width:560px;margin:0 auto 36px;
+  font-weight:300;line-height:1.7;animation:fadeDown 1s .2s ease both;
+}
+.btn-hero{
+  display:inline-flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,var(--g1),var(--g2));color:#000;
+  font-weight:700;font-size:1rem;padding:14px 36px;border-radius:50px;
+  border:none;cursor:pointer;text-decoration:none;
+  box-shadow:0 0 30px rgba(0,230,118,.4);
+  animation:fadeDown 1s .3s ease both;
+  transition:transform .25s,box-shadow .25s;
+}
+.btn-hero:hover{transform:translateY(-3px);box-shadow:0 0 50px rgba(0,230,118,.6);}
+
+/* Bubble decorations in hero */
+.hero-bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.bubble{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,230,118,.18),transparent 70%);
+  animation:riseBubble linear infinite;
+}
+@keyframes riseBubble{
+  0%{transform:translateY(0) scale(1);opacity:.6;}
+  100%{transform:translateY(-110vh) scale(1.4);opacity:0;}
+}
+.hero-stats{
+  display:flex;justify-content:center;gap:40px;flex-wrap:wrap;
+  margin-top:56px;animation:fadeUp 1s .5s ease both;
+}
+.stat-pill{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:18px 28px;text-align:center;backdrop-filter:blur(10px);
+}
+.stat-pill .num{
+  font-family:var(--font-head);font-size:1.6rem;font-weight:700;color:var(--g1);
+}
+.stat-pill .lbl{font-size:.75rem;color:var(--muted);letter-spacing:1px;margin-top:4px;}
+
+/* ─── SECTION COMMON ─── */
+section{position:relative;z-index:1;}
+.section-title{
+  font-family:var(--font-head);font-size:1.6rem;font-weight:700;
+  color:var(--text);margin-bottom:8px;letter-spacing:1px;
+}
+.section-title span{color:var(--g1);}
+.section-sub{color:var(--muted);font-size:.88rem;margin-bottom:32px;}
+
+/* ─── FORM SECTION ─── */
+#predictor{
+  padding:100px 20px;
+  background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+}
+.form-container{max-width:920px;margin:0 auto;}
+
+/* Progress Steps */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:48px;flex-wrap:wrap;gap:4px;}
+.step{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.12);
+  border-radius:10px;padding:10px 20px;flex:1;min-width:180px;
+  transition:all .3s;
+}
+.step.active{background:rgba(0,230,118,.12);border-color:var(--g1);}
+.step-num{
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(0,230,118,.2);border:1.5px solid var(--g1);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-head);font-size:.8rem;font-weight:700;color:var(--g1);
+  flex-shrink:0;
+}
+.step.active .step-num{background:var(--g1);color:#000;}
+.step-label{font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.5px;}
+.step.active .step-label{color:var(--text);}
+
+/* Cards */
+.form-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:32px 36px;margin-bottom:24px;
+  backdrop-filter:blur(12px);
+  transition:border-color .3s;
+}
+.form-card:hover{border-color:rgba(0,255,136,.35);}
+.card-header{
+  display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  padding-bottom:16px;border-bottom:1px solid var(--border);
+}
+.card-icon{
+  width:38px;height:38px;background:linear-gradient(135deg,var(--g2),var(--g3));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;color:#000;flex-shrink:0;
+}
+.card-title{font-family:var(--font-head);font-size:1rem;font-weight:700;color:var(--g1);}
+.card-desc{font-size:.78rem;color:var(--muted);}
+
+/* Feedstock Rows */
+#feedstock-rows{display:flex;flex-direction:column;gap:12px;}
+.feedstock-row{
+  display:grid;grid-template-columns:1fr 160px 44px;gap:10px;align-items:center;
+  animation:slideIn .3s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px);}to{opacity:1;transform:translateX(0);}}
+.row-badge{
+  background:rgba(0,230,118,.1);border:1px solid var(--border);
+  border-radius:8px;padding:4px 10px;font-size:.72rem;color:var(--g3);
+  font-weight:600;letter-spacing:.5px;text-align:center;
+}
+select,input[type=number],input[type=text]{
+  width:100%;background:rgba(0,30,20,.7);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;padding:11px 14px;font-size:.9rem;
+  font-family:var(--font-body);outline:none;
+  transition:border-color .25s,box-shadow .25s;
+  -webkit-appearance:none;
+  appearance:none;
+}
+select{cursor:pointer;}
+select option{background:#0b1821;color:var(--text);}
+select:focus,input:focus{
+  border-color:var(--g1);
+  box-shadow:0 0 0 3px rgba(0,230,118,.12);
+}
+.btn-remove{
+  width:38px;height:38px;border-radius:10px;
+  background:rgba(255,23,68,.1);border:1px solid rgba(255,23,68,.3);
+  color:#ff4d6d;cursor:pointer;font-size:.95rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.btn-remove:hover{background:rgba(255,23,68,.25);}
+.btn-add{
+  display:inline-flex;align-items:center;gap:8px;margin-top:14px;
+  background:rgba(0,230,118,.08);border:1px dashed rgba(0,230,118,.4);
+  color:var(--g1);border-radius:10px;padding:10px 20px;
+  font-size:.85rem;font-weight:600;cursor:pointer;
+  transition:all .25s;
+}
+.btn-add:hover{background:rgba(0,230,118,.15);border-color:var(--g1);}
+
+/* Params Grid */
+.params-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;}
+.param-group{display:flex;flex-direction:column;gap:6px;}
+.param-label{
+  font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.5px;
+  display:flex;align-items:center;gap:6px;
+}
+.param-label .unit{
+  font-size:.68rem;background:rgba(0,230,118,.1);color:var(--g3);
+  padding:2px 6px;border-radius:4px;font-family:monospace;
+}
+.param-hint{font-size:.7rem;color:rgba(126,184,154,.6);margin-top:2px;}
+.toggle-row{display:flex;align-items:center;gap:12px;}
+.toggle{position:relative;width:48px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{
+  position:absolute;inset:0;background:rgba(0,30,20,.8);
+  border:1px solid var(--border);border-radius:26px;cursor:pointer;
+  transition:.3s;
+}
+.slider:before{
+  content:"";position:absolute;left:3px;top:3px;
+  width:18px;height:18px;background:#4a7c6a;
+  border-radius:50%;transition:.3s;
+}
+input:checked+.slider{background:rgba(0,230,118,.2);border-color:var(--g1);}
+input:checked+.slider:before{transform:translateX(22px);background:var(--g1);}
+
+/* Predict Button */
+.btn-predict{
+  width:100%;padding:18px;margin-top:12px;
+  background:linear-gradient(135deg,var(--g1),var(--g2));
+  color:#000;font-family:var(--font-head);font-size:1rem;font-weight:700;
+  border:none;border-radius:16px;cursor:pointer;
+  letter-spacing:2px;display:flex;align-items:center;justify-content:center;gap:12px;
+  box-shadow:0 0 40px rgba(0,230,118,.3);
+  transition:all .3s;
+}
+.btn-predict:hover{box-shadow:0 0 60px rgba(0,230,118,.5);transform:translateY(-2px);}
+.btn-predict:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* ─── LOADING OVERLAY ─── */
+#loading-overlay{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(6,13,18,.92);backdrop-filter:blur(8px);
+  flex-direction:column;align-items:center;justify-content:center;gap:24px;
+}
+#loading-overlay.show{display:flex;}
+.loader-ring{
+  width:80px;height:80px;border-radius:50%;
+  border:3px solid rgba(0,230,118,.15);
+  border-top:3px solid var(--g1);
+  animation:spin 1s linear infinite;
+}
+.loader-bubbles{display:flex;gap:8px;align-items:flex-end;}
+.lb{
+  width:12px;border-radius:6px 6px 0 0;
+  background:linear-gradient(0deg,var(--g2),var(--g1));
+  animation:barBounce 1s ease-in-out infinite;
+}
+.lb:nth-child(1){height:20px;animation-delay:0s;}
+.lb:nth-child(2){height:36px;animation-delay:.15s;}
+.lb:nth-child(3){height:28px;animation-delay:.3s;}
+.lb:nth-child(4){height:44px;animation-delay:.45s;}
+.lb:nth-child(5){height:24px;animation-delay:.6s;}
+@keyframes barBounce{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.6);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loader-text{
+  font-family:var(--font-head);color:var(--g1);font-size:.85rem;
+  letter-spacing:2px;animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ─── RESULTS SECTION ─── */
+#results{
+  display:none;padding:80px 20px;
+  background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);
+}
+#results.show{display:block;}
+.results-container{max-width:920px;margin:0 auto;}
+
+/* Status banner */
+.status-banner{
+  border-radius:20px;padding:28px 36px;margin-bottom:28px;
+  display:flex;align-items:center;gap:20px;
+  animation:slideUp .6s ease both;
+}
+.status-banner.SUCCESS{
+  background:rgba(0,230,118,.08);border:1.5px solid rgba(0,230,118,.4);
+}
+.status-banner.PARTIAL_FAIL{
+  background:rgba(255,171,0,.08);border:1.5px solid rgba(255,171,0,.4);
+}
+.status-banner.FAIL{
+  background:rgba(255,23,68,.08);border:1.5px solid rgba(255,23,68,.4);
+}
+.status-icon-wrap{
+  width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+  flex-shrink:0;
+}
+.SUCCESS .status-icon-wrap{background:rgba(0,230,118,.2);color:var(--g1);}
+.PARTIAL_FAIL .status-icon-wrap{background:rgba(255,171,0,.2);color:#ffab00;}
+.FAIL .status-icon-wrap{background:rgba(255,23,68,.2);color:var(--red);}
+.status-label{font-family:var(--font-head);font-size:1.3rem;font-weight:900;}
+.SUCCESS .status-label{color:var(--g1);}
+.PARTIAL_FAIL .status-label{color:#ffab00;}
+.FAIL .status-label{color:var(--red);}
+.status-desc{font-size:.85rem;color:var(--muted);margin-top:4px;}
+.status-eff{
+  margin-left:auto;text-align:right;
+}
+.eff-num{font-family:var(--font-head);font-size:2rem;font-weight:900;color:var(--g1);}
+.eff-lbl{font-size:.72rem;color:var(--muted);letter-spacing:1px;}
+
+/* KPI Grid */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:16px;margin-bottom:28px;
+}
+.kpi-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:20px 18px;
+  animation:slideUp .6s ease both;
+  transition:transform .25s,border-color .25s;
+}
+.kpi-card:hover{transform:translateY(-4px);border-color:rgba(0,255,136,.4);}
+.kpi-icon{font-size:1.1rem;margin-bottom:10px;color:var(--g3);}
+.kpi-value{
+  font-family:var(--font-head);font-size:1.5rem;font-weight:700;color:var(--g1);
+  counter-reset:none;
+}
+.kpi-unit{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:6px;letter-spacing:.5px;}
+
+/* Charts Row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;}
+.chart-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:24px;
+  animation:slideUp .7s ease both;
+}
+.chart-card-title{
+  font-family:var(--font-head);font-size:.82rem;font-weight:700;
+  color:var(--g1);letter-spacing:1px;margin-bottom:18px;
+  display:flex;align-items:center;gap:8px;
+}
+canvas{max-height:220px;}
+
+/* Efficiency bars */
+.eff-list{display:flex;flex-direction:column;gap:10px;}
+.eff-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.eff-name{font-size:.78rem;color:var(--muted);}
+.eff-val{font-size:.78rem;font-weight:600;color:var(--text);}
+.eff-bar-track{height:6px;background:rgba(0,255,136,.08);border-radius:3px;overflow:hidden;}
+.eff-bar-fill{
+  height:100%;border-radius:3px;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  background:linear-gradient(90deg,var(--g2),var(--g1));
+}
+.eff-bar-fill.warn{background:linear-gradient(90deg,#c62828,#ff1744);}
+.eff-bar-fill.amber{background:linear-gradient(90deg,#e65100,#ffab00);}
+
+/* Blend Summary table */
+.blend-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.blend-table th{
+  text-align:left;padding:10px 14px;
+  background:rgba(0,230,118,.06);color:var(--g3);
+  font-size:.72rem;letter-spacing:1px;font-weight:600;
+  border-bottom:1px solid var(--border);
+}
+.blend-table td{
+  padding:10px 14px;color:var(--text);
+  border-bottom:1px solid rgba(0,255,136,.06);
+}
+.blend-table tr:hover td{background:rgba(0,255,136,.04);}
+
+/* Warnings */
+.warnings-box{margin-bottom:28px;animation:slideUp .8s ease both;}
+.warn-item{
+  display:flex;gap:12px;padding:14px 18px;border-radius:12px;
+  margin-bottom:10px;
+  background:rgba(255,171,0,.05);border:1px solid rgba(255,171,0,.2);
+}
+.warn-item i{color:#ffab00;font-size:.9rem;flex-shrink:0;margin-top:2px;}
+.warn-text{font-size:.83rem;color:var(--text);}
+.rec-item{
+  display:flex;gap:12px;padding:14px 18px;border-radius:12px;
+  margin-bottom:10px;
+  background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.15);
+}
+.rec-item i{color:var(--g3);font-size:.9rem;flex-shrink:0;margin-top:2px;}
+
+/* Reset button */
+.btn-reset{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:14px;margin-top:8px;
+  background:transparent;border:1.5px solid var(--border);
+  color:var(--muted);border-radius:12px;font-weight:600;font-size:.9rem;
+  cursor:pointer;transition:all .25s;
+}
+.btn-reset:hover{border-color:var(--g1);color:var(--g1);background:rgba(0,230,118,.05);}
+
+/* ─── FOOTER ─── */
+footer{
+  padding:40px 20px;text-align:center;
+  border-top:1px solid var(--border);
+  color:var(--muted);font-size:.8rem;line-height:1.8;z-index:1;position:relative;
+}
+footer a{color:var(--g3);text-decoration:none;}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:700px){
+  nav{padding:12px 16px;}
+  .nav-links{display:none;}
+  .charts-row{grid-template-columns:1fr;}
+  .feedstock-row{grid-template-columns:1fr 120px 40px;}
+  .form-card{padding:20px 16px;}
+  .status-banner{flex-direction:column;align-items:flex-start;}
+  .status-eff{margin-left:0;}
+  .hero-stats{gap:16px;}
+}
+
+/* ─── AI Diagnosis card ─── */
+.ai-diagnosis{
+  display:none;
+  background:var(--card);
+  border:1px solid rgba(0,255,136,.10);
+  border-radius:14px;
+  padding:16px 20px;
+  margin-bottom:24px;
+  gap:14px;
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+.ai-diagnosis.show{display:flex;}
+.ai-diag-icon{font-size:1.5rem;color:var(--g1);margin-top:2px;}
+.ai-diag-body{flex:1;min-width:180px;}
+.ai-diag-label{font-size:.72rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.ai-diag-cause{font-size:1.0rem;font-weight:700;color:#ffab00;margin-bottom:10px;}
+.SUCCESS .ai-diag-cause{color:var(--g1);}
+.prob-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:.78rem;}
+.prob-label{width:90px;color:var(--muted);text-align:right;flex-shrink:0;}
+.prob-track{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.prob-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.prob-fill.SUCCESS{background:var(--g1);}
+.prob-fill.PARTIAL_FAIL{background:#ffab00;}
+.prob-fill.FAIL{background:var(--red);}
+.prob-val{width:36px;color:var(--txt);text-align:right;}
+
+
+/* ─── Input validation states ─── */
+input.input-error{
+  border-color:var(--red)!important;
+  box-shadow:0 0 0 2px rgba(255,23,68,.22)!important;
+  animation:shake .3s ease;
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  25%{transform:translateX(-4px);}
+  75%{transform:translateX(4px);}
+}
+input.input-ok{
+  border-color:var(--g1)!important;
+  box-shadow:0 0 0 2px rgba(0,230,118,.15)!important;
+}
+.field-hint{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.field-hint.err{color:var(--red);}
+
+</style>
+</head>
+
+<body>
+<!-- Particle Canvas -->
+<canvas id="particles-bg"></canvas>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-logo">Bio<span>Smart</span></div>
+  <ul class="nav-links">
+    <li><a href="#hero">Home</a></li>
+    <li><a href="#predictor">Predictor</a></li>
+    <li><a href="#results">Results</a></li>
+  </ul>
+  <span class="nav-badge">AI Powered</span>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bubbles" id="hero-bubbles"></div>
+  <div>
+    <div class="hero-eyebrow">🌿 SMART BIOGAS ANALYTICS PLATFORM</div>
+    <h1 class="hero-title">Predict Your<br>Biogas Yield<br>With AI</h1>
+    <p class="hero-sub">Enter your feedstock mix and digester parameters. Our physics-informed AI model computes blended properties and predicts gas yield, status, and actionable optimisation tips.</p>
+    <a href="#predictor" class="btn-hero">
+      <i class="fa-solid fa-flask-vial"></i> Start Prediction
+    </a>
+    <div class="hero-stats">
+      <div class="stat-pill"><div class="num">55+</div><div class="lbl">Feedstock Types</div></div>
+      <div class="stat-pill"><div class="num">9</div><div class="lbl">Physics Factors</div></div>
+      <div class="stat-pill"><div class="num">10K</div><div class="lbl">Training Rows</div></div>
+      <div class="stat-pill"><div class="num">37</div><div class="lbl">ML Features</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+  <div class="loader-ring"></div>
+  <div class="loader-bubbles">
+    <div class="lb"></div><div class="lb"></div>
+    <div class="lb"></div><div class="lb"></div><div class="lb"></div>
+  </div>
+  <div class="loader-text">COMPUTING BLEND & PREDICTING...</div>
+</div>
+
+<!-- PREDICTOR -->
+<section id="predictor">
+<div class="form-container">
+  <div class="section-title">Digester <span>Input Panel</span></div>
+  <p class="section-sub">Fill in Steps 1 and 2 below, then hit Predict.</p>
+
+  <div class="steps">
+    <div class="step active" id="step1-pill">
+      <div class="step-num">1</div>
+      <div><div class="step-label">FEEDSTOCK MIX</div></div>
+    </div>
+    <div class="step" id="step2-pill">
+      <div class="step-num">2</div>
+      <div><div class="step-label">OPERATING PARAMS</div></div>
+    </div>
+    <div class="step" id="step3-pill">
+      <div class="step-num">3</div>
+      <div><div class="step-label">PREDICT &amp; RESULTS</div></div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Feedstocks -->
+  <div class="form-card" id="card-feedstocks">
+    <div class="card-header">
+      <div class="card-icon"><i class="fa-solid fa-seedling"></i></div>
+      <div>
+        <div class="card-title">Step 1 — Add Your Feedstock Mix</div>
+        <div class="card-desc">Select each feedstock from the dropdown and enter its mass in kg. Add up to 10 types.</div>
+      </div>
+    </div>
+    <div id="feedstock-rows"></div>
+    <button class="btn-add" id="btn-add-row">
+      <i class="fa-solid fa-plus"></i> Add Another Feedstock
+    </button>
+  </div>
+
+  <!-- STEP 2: Operating Params -->
+  <div class="form-card" id="card-params">
+    <div class="card-header">
+      <div class="card-icon"><i class="fa-solid fa-gauge-high"></i></div>
+      <div>
+        <div class="card-title">Step 2 — Digester Operating Parameters</div>
+        <div class="card-desc">Enter the physical conditions of your biogas digester.</div>
+      </div>
+    </div>
+    <div class="params-grid">
+
+      <div class="param-group">
+        <label class="param-label">
+          Digester Volume <span class="unit">m³</span>
+        </label>
+        <input type="number" id="p_volume" min="0.5" max="5000" step="0.5" value="5" placeholder="e.g. 5" inputmode="decimal" required>
+        <span class="param-hint">Total working volume of digester</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          HRT — Retention Time <span class="unit">days</span>
+        </label>
+        <input type="number" id="p_hrt" min="5" max="90" step="1" value="30" placeholder="e.g. 30" inputmode="decimal" required>
+        <span class="param-hint">Optimal range: 20–45 days</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          Operating Temperature <span class="unit">°C</span>
+        </label>
+        <input type="number" id="p_temp" min="5" max="70" step="0.5" value="37" placeholder="e.g. 37" inputmode="decimal" required>
+        <span class="param-hint">Mesophilic: 35–40 °C | Thermophilic: 50–55 °C</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          Day-Night Temp Swing <span class="unit">±°C</span>
+        </label>
+        <input type="number" id="p_fluct" min="0" max="20" step="0.5" value="2" placeholder="e.g. 2" inputmode="decimal" required>
+        <span class="param-hint">Keep &lt;3°C for stable digestion</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          Headspace Pressure <span class="unit">kPa</span>
+        </label>
+        <input type="number" id="p_pressure" min="100" max="250" step="1" value="105" placeholder="e.g. 105" inputmode="decimal" required>
+        <span class="param-hint">Atmospheric ≈ 101.3 kPa</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          Inoculum-to-Substrate Ratio <span class="unit">ISR</span>
+        </label>
+        <input type="number" id="p_isr" min="0.01" max="3" step="0.05" value="0.6" placeholder="e.g. 0.6" inputmode="decimal" required>
+        <span class="param-hint">Optimal ≥ 0.5 (inoculum / feed VS)</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          Urea Added (optional) <span class="unit">kg</span>
+        </label>
+        <input type="number" id="p_urea" min="0" max="500" step="0.1" value="0" placeholder="0" inputmode="decimal">
+        <span class="param-hint">Leave 0 if not adding urea</span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">
+          Water Added for Dilution <span class="unit">kg&nbsp;<small style="color:var(--muted);">(≈ litres)</small></span>
+        </label>
+        <input type="number" id="p_water" min="0" max="10000" step="0.5" value="0"
+               placeholder="0 = no extra water" inputmode="decimal">
+        <span class="param-hint">
+          Target TS 8–12 % for optimal mixing. Add water to dilute thick feedstocks.
+        </span>
+      </div>
+
+      <div class="param-group">
+        <label class="param-label">Continuous Feed Mode</label>
+        <div class="toggle-row" style="margin-top:6px;">
+          <label class="toggle">
+            <input type="checkbox" id="p_continuous"/>
+            <span class="slider"></span>
+          </label>
+          <span style="font-size:.82rem;color:var(--muted);" id="continuous-label">Batch Mode</span>
+        </div>
+        <span class="param-hint">Toggle ON for continuous-feed digesters</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PREDICT BUTTON -->
+  
+<!-- ── Input Validation Error Panel ── -->
+<div id="val-panel" style="display:none;margin-top:16px;background:#1e0a0a;border:1px solid var(--red);border-radius:10px;padding:14px 18px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+    <i class="fa-solid fa-circle-xmark" style="color:var(--red);font-size:1.1rem;"></i>
+    <span style="color:var(--red);font-weight:700;font-size:.9rem;letter-spacing:.05em;">PLEASE FIX THE FOLLOWING INPUTS</span>
+  </div>
+  <ul id="val-list" style="margin:0;padding-left:20px;color:#ff8080;font-size:.82rem;line-height:1.8;"></ul>
+</div>
+
+<button class="btn-predict" id="btn-predict">
+    <i class="fa-solid fa-bolt"></i> PREDICT BIOGAS YIELD
+  </button>
+</div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+<div class="results-container">
+  <div class="section-title" style="margin-bottom:24px;">Prediction <span>Results</span></div>
+
+  <!-- Status Banner -->
+  <div id="status-banner" class="status-banner SUCCESS">
+    <div class="status-icon-wrap"><i id="status-icon" class="fa-solid fa-check"></i></div>
+    <div>
+      <div class="status-label" id="status-label">SUCCESS</div>
+      <div class="status-desc" id="status-desc">Conditions are optimal for biogas production.</div>
+    </div>
+    <div class="status-eff">
+      <div class="eff-num" id="eff-num">—</div>
+      <div class="eff-lbl">GEOM. EFFICIENCY</div>
+    </div>
+  </div>
+
+  <!-- AI Diagnosis: Stage 2 cause + Stage 1 confidence (auto-hidden for SUCCESS) -->
+  <div id="ai-diagnosis" class="ai-diagnosis">
+    <div class="ai-diag-icon"><i class="fa-solid fa-brain"></i></div>
+    <div class="ai-diag-body">
+      <div class="ai-diag-label">AI Diagnosis — Primary Bottleneck</div>
+      <div class="ai-diag-cause" id="diag-cause">—</div>
+      <div class="ai-diag-label" style="margin-bottom:6px;">Model Confidence</div>
+      <div class="prob-row">
+        <span class="prob-label">SUCCESS</span>
+        <div class="prob-track"><div class="prob-fill SUCCESS" id="prob-fill-SUCCESS" style="width:0%"></div></div>
+        <span class="prob-val" id="prob-val-SUCCESS">—</span>
+      </div>
+      <div class="prob-row">
+        <span class="prob-label">PARTIAL FAIL</span>
+        <div class="prob-track"><div class="prob-fill PARTIAL_FAIL" id="prob-fill-PARTIAL_FAIL" style="width:0%"></div></div>
+        <span class="prob-val" id="prob-val-PARTIAL_FAIL">—</span>
+      </div>
+      <div class="prob-row">
+        <span class="prob-label">FAIL</span>
+        <div class="prob-track"><div class="prob-fill FAIL" id="prob-fill-FAIL" style="width:0%"></div></div>
+        <span class="prob-val" id="prob-val-FAIL">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <div class="kpi-value" id="kpi-yield">—</div>
+      <div class="kpi-unit">L / kg VS</div>
+      <div class="kpi-lbl">BIOGAS YIELD</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-drum-steelpan"></i></div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-unit">Litres total</div>
+      <div class="kpi-lbl">TOTAL BIOGAS</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-atom"></i></div>
+      <div class="kpi-value" id="kpi-ch4">—</div>
+      <div class="kpi-unit">% methane</div>
+      <div class="kpi-lbl">CH₄ CONTENT</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-cloud"></i></div>
+      <div class="kpi-value" id="kpi-co2">—</div>
+      <div class="kpi-unit">% carbon dioxide</div>
+      <div class="kpi-lbl">CO₂ CONTENT</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-dna"></i></div>
+      <div class="kpi-value" id="kpi-cn">—</div>
+      <div class="kpi-unit">C/N ratio (blended)</div>
+      <div class="kpi-lbl">C/N RATIO</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-vials"></i></div>
+      <div class="kpi-value" id="kpi-olr">—</div>
+      <div class="kpi-unit">kg VS / m³ / day</div>
+      <div class="kpi-lbl">OLR</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-title"><i class="fa-solid fa-chart-pie"></i> Gas Composition</div>
+      <canvas id="chart-gas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title"><i class="fa-solid fa-chart-bar"></i> Efficiency Radar</div>
+      <canvas id="chart-radar"></canvas>
+    </div>
+  </div>
+
+  <!-- Efficiency Bars -->
+  <div class="form-card" style="margin-bottom:24px;">
+    <div class="card-header">
+      <div class="card-icon"><i class="fa-solid fa-sliders"></i></div>
+      <div><div class="card-title">Physics Efficiency Breakdown</div>
+          <div class="card-desc">Each factor scored 0–1. Low values indicate the bottleneck.</div></div>
+    </div>
+    <div class="eff-list" id="eff-bars"></div>
+  </div>
+
+  <!-- Blend Summary -->
+  <div class="form-card" style="margin-bottom:24px;" id="blend-summary-card">
+    <div class="card-header">
+      <div class="card-icon"><i class="fa-solid fa-table-list"></i></div>
+      <div><div class="card-title">Blended Feed Summary</div>
+          <div class="card-desc">Computed from feedstock database lookup.</div></div>
+    </div>
+    <table class="blend-table" id="blend-table"><thead></thead><tbody></tbody></table>
+  </div>
+
+  <!-- Warnings -->
+  <div class="warnings-box" id="warnings-section"></div>
+
+  <!-- Reset -->
+  <button class="btn-reset" onclick="resetForm()">
+    <i class="fa-solid fa-rotate-left"></i> New Prediction
+  </button>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p><strong style="color:var(--g1);font-family:var(--font-head);">BioSmart</strong> — Physics-Informed Biogas Prediction Platform</p>
+  <p style="margin-top:6px;">Built with Flask · Python · Chart.js &nbsp;|&nbsp; Feedstock data from literature &nbsp;|&nbsp; <a href="#">v3.0</a></p>
+</footer>
+
+<script>
+// ─── Particle Canvas ──────────────────────────────────────────
+(function(){
+  const c=document.getElementById('particles-bg');
+  const ctx=c.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  class Pt{
+    constructor(){this.reset();}
+    reset(){
+      this.x=Math.random()*W; this.y=H+20;
+      this.r=Math.random()*3+1;
+      this.vy=-(Math.random()*0.5+0.2);
+      this.vx=(Math.random()-0.5)*0.3;
+      this.alpha=Math.random()*0.4+0.1;
+      this.hue=Math.random()>0.5?142:168;
+    }
+    update(){
+      this.x+=this.vx; this.y+=this.vy;
+      if(this.y<-20||this.x<-20||this.x>W+20)this.reset();
+    }
+    draw(){
+      ctx.save();ctx.globalAlpha=this.alpha;
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle=`hsl(${this.hue},80%,60%)`;ctx.fill();
+      ctx.restore();
+    }
+  }
+  for(let i=0;i<140;i++)pts.push(new Pt());
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{p.update();p.draw();});
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ─── Hero bubbles ─────────────────────────────────────────────
+(function(){
+  const wrap=document.getElementById('hero-bubbles');
+  for(let i=0;i<18;i++){
+    const b=document.createElement('div');
+    b.className='bubble';
+    const sz=Math.random()*160+40;
+    b.style.cssText=`
+      width:${sz}px;height:${sz}px;
+      left:${Math.random()*100}%;
+      bottom:${-sz}px;
+      animation-duration:${Math.random()*12+8}s;
+      animation-delay:${Math.random()*10}s;
+    `;
+    wrap.appendChild(b);
+  }
+})();
+
+// ─── Toggle label ─────────────────────────────────────────────
+document.getElementById('p_continuous').addEventListener('change',function(){
+  document.getElementById('continuous-label').textContent=
+    this.checked?'Continuous Feed':'Batch Mode';
+});
+
+// ─── Feedstock dropdown population ───────────────────────────
+let FEEDSTOCKS=[];
+let rowCount=0;
+let gasChart=null,radarChart=null;
+
+async function loadFeedstocks(){
+  try{
+    const res=await fetch('/api/feedstocks');
+    FEEDSTOCKS=await res.json();
+    addFeedstockRow(); // add first row automatically
+  }catch(e){
+    console.error('Failed to load feedstocks',e);
+    // Fallback empty select
+    addFeedstockRow();
+  }
+}
+
+function buildSelect(){
+  const sel=document.createElement('select');
+  sel.className='feedstock-select';
+  // Group by category
+  const cats={};
+  FEEDSTOCKS.forEach(f=>{
+    if(!cats[f.category])cats[f.category]=[];
+    cats[f.category].push(f.name);
+  });
+  const ph=document.createElement('option');
+  ph.value='';ph.textContent='— Select feedstock —';ph.disabled=true;ph.selected=true;
+  sel.appendChild(ph);
+  Object.keys(cats).forEach(cat=>{
+    const og=document.createElement('optgroup');
+    og.label=cat;
+    cats[cat].forEach(name=>{
+      const opt=document.createElement('option');
+      opt.value=name;opt.textContent=name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+  return sel;
+}
+
+function addFeedstockRow(){
+  const container=document.getElementById('feedstock-rows');
+  if(container.children.length>=10)return;
+  rowCount++;
+  const row=document.createElement('div');
+  row.className='feedstock-row';
+  row.dataset.id=rowCount;
+
+  const badge=document.createElement('div');
+  badge.className='row-badge';
+  badge.textContent='Feed #'+rowCount;
+
+  // Actually make the badge part of a wrapper to keep grid clean
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='display:flex;flex-direction:column;gap:6px;';
+  wrapper.appendChild(badge);
+  wrapper.appendChild(buildSelect());
+
+  const massInput=document.createElement('input');
+  massInput.type='number';massInput.min='0.1';massInput.max='50000';massInput.step='0.1';
+  massInput.setAttribute('inputmode','decimal');
+  massInput.placeholder='kg'; massInput.style.textAlign='right';
+  massInput.title='Enter feedstock mass: 0.1 – 50,000 kg';
+  // Real-time validation for mass
+  massInput.addEventListener('input',()=>validateMassInput(massInput));
+
+  const removeBtn=document.createElement('button');
+  removeBtn.className='btn-remove';
+  removeBtn.innerHTML='<i class="fa-solid fa-xmark"></i>';
+  removeBtn.onclick=()=>{
+    if(container.children.length>1)row.remove();
+  };
+
+  row.appendChild(wrapper);
+  row.appendChild(massInput);
+  row.appendChild(removeBtn);
+  container.appendChild(row);
+  document.getElementById('step1-pill').classList.add('active');
+}
+
+document.getElementById('btn-add-row').addEventListener('click',addFeedstockRow);
+
+// ─── Predict ──────────────────────────────────────────────────
+// ── Validation helpers ────────────────────────────────────────
+const FIELD_RULES = {
+  p_volume:   {min:1,     max:500,  label:'Digester Volume',       unit:'m³'},
+  p_hrt:      {min:5,     max:90,   label:'HRT',                   unit:'days'},
+  p_temp:     {min:5,     max:70,   label:'Operating Temperature', unit:'°C'},
+  p_fluct:    {min:0,     max:20,   label:'Temp Fluctuation',      unit:'°C'},
+  p_pressure: {min:100,   max:250,  label:'Pressure',              unit:'kPa'},
+  p_isr:      {min:0.01,  max:3.0,  label:'ISR',                   unit:''},
+  p_urea:     {min:0,     max:500,  label:'Urea Added',            unit:'kg', optional:true},
+};
+
+function safeParseFloat(raw){
+  // Strip any non-numeric characters except leading minus and dot
+  const cleaned = String(raw).replace(/[^0-9.\-]/g,'');
+  const v = parseFloat(cleaned);
+  return isNaN(v) ? NaN : v;
+}
+
+function validateField(id){
+  const rule  = FIELD_RULES[id];
+  const input = document.getElementById(id);
+  const raw   = input.value.trim();
+  const msgs  = [];
+
+  // Empty check (skip if optional and empty)
+  if(raw === ''){
+    if(rule.optional){ input.classList.remove('input-error','input-ok'); return null; }
+    input.classList.add('input-error'); input.classList.remove('input-ok');
+    return rule.label + ' is required.';
+  }
+
+  // Non-numeric / special character check
+  if(!/^-?[0-9]*\.?[0-9]+(e[+-]?[0-9]+)?$/i.test(raw)){
+    input.classList.add('input-error'); input.classList.remove('input-ok');
+    return rule.label + ': only numbers are accepted (got "' + raw.substring(0,20) + '").';
+  }
+
+  const v = parseFloat(raw);
+
+  // NaN / Infinite check (catches scientific extremes like 1e999)
+  if(!isFinite(v) || isNaN(v)){
+    input.classList.add('input-error'); input.classList.remove('input-ok');
+    return rule.label + ': value must be a finite number.';
+  }
+
+  // Range checks
+  if(v < rule.min){
+    input.classList.add('input-error'); input.classList.remove('input-ok');
+    return rule.label + ': ' + v + ' is too low — minimum is ' + rule.min + ' ' + rule.unit + '.';
+  }
+  if(v > rule.max){
+    input.classList.add('input-error'); input.classList.remove('input-ok');
+    return rule.label + ': ' + v + ' is too high — maximum is ' + rule.max + ' ' + rule.unit + '. (Unrealistic value)';
+  }
+
+  input.classList.remove('input-error'); input.classList.add('input-ok');
+  return null; // valid
+}
+
+function validateMassInput(massInput){
+  const raw = massInput.value.trim();
+  if(raw === ''){ massInput.classList.remove('input-error','input-ok'); return; }
+  if(!/^[0-9]*\.?[0-9]+$/.test(raw)){
+    massInput.classList.add('input-error'); massInput.classList.remove('input-ok'); return;
+  }
+  const v = parseFloat(raw);
+  if(!isFinite(v)||v < 0.1||v > 50000){
+    massInput.classList.add('input-error'); massInput.classList.remove('input-ok');
+  } else {
+    massInput.classList.remove('input-error'); massInput.classList.add('input-ok');
+  }
+}
+
+function showErrors(msgs){
+  const panel = document.getElementById('val-panel');
+  const list  = document.getElementById('val-list');
+  if(!msgs || msgs.length===0){ panel.style.display='none'; return; }
+  list.innerHTML = msgs.map(m=>'<li>'+m+'</li>').join('');
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Attach real-time listeners to all static operating parameter inputs
+Object.keys(FIELD_RULES).forEach(id=>{
+  const el = document.getElementById(id);
+  if(el){
+    el.addEventListener('input', ()=>{ validateField(id); });
+    el.addEventListener('blur',  ()=>{ validateField(id); });
+  }
+});
+
+// ── Predict button ─────────────────────────────────────────────
+document.getElementById('btn-predict').addEventListener('click',async function(){
+  const errors = [];
+
+  // ── Feedstock rows validation ────────────────────────────────
+  const rows = document.querySelectorAll('.feedstock-row');
+  const feedstocks = [];
+  if(rows.length === 0){ errors.push('Add at least one feedstock before predicting.'); }
+  rows.forEach((row, idx)=>{
+    const sel  = row.querySelector('select');
+    const mass = row.querySelector('input[type=number]');
+    const raw  = mass ? mass.value.trim() : '';
+    const label = 'Feedstock #'+(idx+1);
+
+    if(!sel || !sel.value){ errors.push(label+': no feedstock selected.'); return; }
+
+    if(raw === ''){ errors.push(label+' ('+sel.value+'): mass is required.'); if(mass)mass.classList.add('input-error'); return; }
+    if(!/^[0-9]*\.?[0-9]+$/.test(raw)){
+      errors.push(label+' ('+sel.value+'): mass must be a number (got "'+raw.substring(0,15)+'").'); if(mass)mass.classList.add('input-error'); return;
+    }
+    const mv = parseFloat(raw);
+    if(!isFinite(mv)||mv < 0.1){ errors.push(label+' ('+sel.value+'): mass must be ≥ 0.1 kg.'); if(mass)mass.classList.add('input-error'); return; }
+    if(mv > 50000){ errors.push(label+' ('+sel.value+'): mass '+mv+' kg is unrealistically large (max 50,000 kg).'); if(mass)mass.classList.add('input-error'); return; }
+    if(mass)mass.classList.remove('input-error');mass.classList.add('input-ok');
+    feedstocks.push({name:sel.value, mass_kg:mv});
+  });
+
+  // Check duplicate feedstocks
+  const names = feedstocks.map(f=>f.name);
+  const dupes = names.filter((n,i)=>names.indexOf(n)!==i);
+  if(dupes.length>0) errors.push('Duplicate feedstock(s): '+[...new Set(dupes)].join(', ')+'. Each feedstock can only be added once.');
+
+  // ── Operating parameters validation ─────────────────────────
+  Object.keys(FIELD_RULES).forEach(id=>{
+    const msg = validateField(id);
+    if(msg) errors.push(msg);
+  });
+
+  if(errors.length > 0){ showErrors(errors); return; }
+  showErrors([]); // clear any prior errors
+
+  // ── Build sanitised payload ──────────────────────────────────
+  const payload={
+    feedstocks,
+    digester_volume_m3:     parseFloat(document.getElementById('p_volume').value),
+    HRT_days:               parseFloat(document.getElementById('p_hrt').value),
+    operating_temp_C:       parseFloat(document.getElementById('p_temp').value),
+    temp_fluctuation_degC:  parseFloat(document.getElementById('p_fluct').value),
+    operating_pressure_kPa: parseFloat(document.getElementById('p_pressure').value),
+    ISR:                    parseFloat(document.getElementById('p_isr').value),
+    urea_added_kg:          parseFloat(document.getElementById('p_urea').value)||0,
+              water_added_kg:     parseFloat(document.getElementById('p_water')?.value)||0,
+    is_continuous:          document.getElementById('p_continuous').checked,
+  };
+
+  // Show loading
+  document.getElementById('loading-overlay').classList.add('show');
+  document.getElementById('btn-predict').disabled=true;
+  document.getElementById('step2-pill').classList.add('active');
+
+  try{
+    const res=await fetch('/api/predict',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(data.error){showErrors(['Server error: '+data.error]);document.getElementById('loading-overlay').classList.remove('show');document.getElementById('btn-predict').disabled=false;return;}
+    renderResults(data);
+  }catch(e){
+    showErrors(['Network error — could not reach server: '+e.message]);
+  }finally{
+    document.getElementById('loading-overlay').classList.remove('show');
+    document.getElementById('btn-predict').disabled=false;
+  }
+});
+
+// ─── Render Results ───────────────────────────────────────────
+function renderResults(d){
+  document.getElementById('step3-pill').classList.add('active');
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+
+  // Status banner
+  const banner=document.getElementById('status-banner');
+  banner.className='status-banner '+d.run_status;
+  const icons={SUCCESS:'fa-check',PARTIAL_FAIL:'fa-triangle-exclamation',FAIL:'fa-xmark'};
+  const descs={
+    SUCCESS:'Conditions are optimal — expect good biogas production.',
+    PARTIAL_FAIL:'Conditions are suboptimal — production will be reduced. See recommendations.',
+    FAIL:'Critical parameters are out of range — biogas production is unlikely. Act on warnings immediately.',
+  };
+  document.getElementById('status-icon').className='fa-solid '+icons[d.run_status];
+  document.getElementById('status-label').textContent=d.run_status.replace('_',' ');
+  document.getElementById('status-desc').textContent=descs[d.run_status];
+
+  // Stage 2 — Primary failure cause
+  const diagEl = document.getElementById('ai-diagnosis');
+  document.getElementById('diag-cause').textContent = d.primary_failure_cause || '—';
+  diagEl.className = 'ai-diagnosis show ' + d.run_status;
+
+  // Stage 1 — Status probabilities (confidence bars)
+  ['SUCCESS','PARTIAL_FAIL','FAIL'].forEach(cls => {
+    const pct = ((d.status_probabilities && d.status_probabilities[cls]) || 0) * 100;
+    const fill = document.getElementById('prob-fill-' + cls);
+    const val  = document.getElementById('prob-val-'  + cls);
+    if(fill) setTimeout(()=>{ fill.style.width = pct.toFixed(1)+'%'; }, 120);
+    if(val)  val.textContent = pct.toFixed(1)+'%';
+  });
+
+  document.getElementById('eff-num').textContent=(d.geom_mean_efficiency*100).toFixed(1)+'%';
+  document.getElementById('eff-num').style.color=
+    d.run_status==='SUCCESS'?'var(--g1)':d.run_status==='PARTIAL_FAIL'?'#ffab00':'var(--red)';
+
+  // KPIs with counter animation
+  animCount('kpi-yield',  d.biogas_yield_L_per_kgVS, 1);
+  animCount('kpi-total',  d.total_biogas_L,           0);
+  animCount('kpi-ch4',    d.CH4_pct,                  1);
+  animCount('kpi-co2',    d.CO2_pct,                  1);
+  animCount('kpi-cn',     d.blended_CN_ratio,         1);
+  animCount('kpi-olr',    d.OLR_kg_VS_m3_day,         2);
+
+  // Gas composition doughnut
+  if(gasChart)gasChart.destroy();
+  gasChart=new Chart(document.getElementById('chart-gas').getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:['CH₄','CO₂','Other'],
+      datasets:[{
+        data:[d.CH4_pct, d.CO2_pct, Math.max(0,100-d.CH4_pct-d.CO2_pct)],
+        backgroundColor:['rgba(0,230,118,.85)','rgba(100,180,255,.7)','rgba(180,180,180,.4)'],
+        borderColor:['#004d29','#005580','#555'],
+        borderWidth:1.5,
+        hoverOffset:8,
+      }]
+    },
+    options:{
+      cutout:'68%',responsive:true,maintainAspectRatio:true,
+      plugins:{
+        legend:{
+          position:'right',
+          labels:{color:'#7eb89a',font:{size:11},boxWidth:12,padding:14}
+        }
+      }
+    }
+  });
+
+  // Efficiency Radar
+  const effKeys=Object.keys(d.efficiency_breakdown);
+  const effVals=effKeys.map(k=>d.efficiency_breakdown[k]);
+  if(radarChart)radarChart.destroy();
+  radarChart=new Chart(document.getElementById('chart-radar').getContext('2d'),{
+    type:'radar',
+    data:{
+      labels:effKeys,
+      datasets:[{
+        label:'Efficiency',
+        data:effVals.map(v=>v*100),
+        backgroundColor:'rgba(0,230,118,.12)',
+        borderColor:'var(--g1)',
+        pointBackgroundColor:'var(--g1)',
+        pointRadius:4,borderWidth:2,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      scales:{
+        r:{
+          min:0,max:100,
+          angleLines:{color:'rgba(0,255,136,.1)'},
+          grid:{color:'rgba(0,255,136,.08)'},
+          ticks:{color:'#4a7c6a',backdropColor:'transparent',font:{size:9},stepSize:25},
+          pointLabels:{color:'#7eb89a',font:{size:9}},
+        }
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
+
+  // Efficiency bars
+  const effList=document.getElementById('eff-bars');
+  effList.innerHTML='';
+  Object.entries(d.efficiency_breakdown).forEach(([k,v])=>{
+    const pct=Math.round(v*100);
+    const cls=pct<50?'warn':pct<70?'amber':'';
+    effList.innerHTML+=`
+      <div class="eff-item">
+        <div class="eff-row"><span class="eff-name">${k}</span><span class="eff-val">${pct}%</span></div>
+        <div class="eff-bar-track"><div class="eff-bar-fill ${cls}" style="width:0%" data-target="${pct}%"></div></div>
+      </div>`;
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('.eff-bar-fill').forEach(b=>{
+      b.style.width=b.dataset.target;
+    });
+  },100);
+
+  // Blend summary table
+  const blendRows=[
+    ['Blended C/N Ratio',d.blended_CN_ratio,'optimal: 20–30'],
+    ['Total Solids (TS%)',d.TS_pct+'%','optimal: 4–12%'],
+    ['Total VS',d.total_VS_kg+' kg','volatile solids available'],
+    ['OLR',d.OLR_kg_VS_m3_day+' kg VS/m³/day','optimal: 1–4'],
+    ['H₂S Risk Level',['—','Low','Medium','High'][d.H2S_risk],'1=low 3=high'],
+  ];
+  const tbl=document.getElementById('blend-table');
+  tbl.querySelector('thead').innerHTML=
+    '<tr><th>Parameter</th><th>Value</th><th>Reference</th></tr>';
+  tbl.querySelector('tbody').innerHTML=
+    blendRows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td style="color:var(--muted)">${r[2]}</td></tr>`).join('');
+
+  // Warnings & recs
+  const ws=document.getElementById('warnings-section');
+  ws.innerHTML='';
+  if(d.warnings.length>0){
+    ws.innerHTML+='<div class="card-title" style="margin-bottom:12px"><i class="fa-solid fa-triangle-exclamation" style="color:#ffab00;margin-right:8px"></i>Warnings</div>';
+    d.warnings.forEach(w=>{
+      ws.innerHTML+=`<div class="warn-item"><i class="fa-solid fa-circle-exclamation"></i><span class="warn-text">${w}</span></div>`;
+    });
+  }
+  if(d.recommendations.length>0){
+    ws.innerHTML+='<div class="card-title" style="margin:16px 0 12px"><i class="fa-solid fa-lightbulb" style="color:var(--g3);margin-right:8px"></i>Recommendations</div>';
+    d.recommendations.forEach(r=>{
+      ws.innerHTML+=`<div class="rec-item"><i class="fa-solid fa-circle-check"></i><span class="warn-text">${r}</span></div>`;
+    });
+  }
+}
+
+function animCount(id,target,dec){
+  const el=document.getElementById(id);
+  const start=0,dur=1200,step=16;
+  let cur=start,t=0;
+  const timer=setInterval(()=>{
+    t+=step;
+    cur=start+(target-start)*easeOut(t/dur);
+    el.textContent=cur.toFixed(dec);
+    if(t>=dur){el.textContent=target.toFixed(dec);clearInterval(timer);}
+  },step);
+}
+function easeOut(t){return 1-Math.pow(1-t,3);}
+
+function resetForm(){
+  document.getElementById('results').classList.remove('show');
+  ['step1-pill','step2-pill','step3-pill'].forEach(id=>{
+    document.getElementById(id).classList.remove('active');
+  });
+  document.getElementById('step1-pill').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+loadFeedstocks();
+</script>
+</body>
+</html>
